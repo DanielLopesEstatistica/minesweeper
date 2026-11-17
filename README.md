@@ -1,21 +1,20 @@
-﻿# Minesweeper
+﻿<sub>**Datas:** pasta 23/12/2022 · código 19/12/2022 (`minesweeper.Rmd`)</sub>
 
-## Data de criação
+# Campo minado + ML
 
-Datas inferidas dos metadados dos arquivos em `C:\R\Minesweeper` (Windows).
+Simula tabuleiros **Campo Minado** e treina **rede neural / árvore** para prever células seguras a partir de tabuleiro parcial.
 
-| Referência | Data |
-|------------|------|
-| Pasta criada no disco | 23 de dezembro de 2022 |
-| Primeiro código ou notebook versionado | 19 de dezembro de 2022 (`minesweeper.Rmd`) |
-| Repositório Git (commit inicial) | 16 de novembro de 2026 |
+## O que o código faz
 
-Projeto local em `C:\R\Minesweeper`.
+`minesweeper.Rmd` em duas partes:
 
-## Como usar
+1. **Jogo 16×30** — gera minas, vizinhança, jogada interativa.
+2. **10 000 tabuleiros 5×5** — features do que já foi revelado → `neuralnet` / `rpart`.
 
-Abra os arquivos `.R`, `.Rmd`, `.py` ou o `.Rproj` nesta pasta no RStudio ou no editor de sua preferência.
+## Dados
 
-## Dados grandes
+Tudo simulado; sem arquivos de entrada.
 
-Arquivos acima de 100 MB podem estar listados no `.gitignore`; obtenha-os localmente se o código referenciar esses caminhos.
+## Como rodar
+
+Knit no RStudio (a parte com 10k puzzles é **lenta**).
