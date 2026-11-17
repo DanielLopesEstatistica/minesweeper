@@ -1,5 +1,15 @@
 ﻿# Minesweeper
 
+## Data de criação
+
+Datas inferidas dos metadados dos arquivos em `C:\R\Minesweeper` (Windows).
+
+| Referência | Data |
+|------------|------|
+| Pasta criada no disco | 23 de dezembro de 2022 |
+| Primeiro código ou notebook versionado | 19 de dezembro de 2022 (`minesweeper.Rmd`) |
+| Repositório Git (commit inicial) | 16 de novembro de 2026 |
+
 Projeto local em `C:\R\Minesweeper`.
 
 ## Como usar
