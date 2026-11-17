@@ -1,0 +1,226 @@
+---
+title: "Minesweeper"
+author: "Daniel Lopes"
+date: "2022-12-16"
+output: html_document
+---
+
+```{r}
+create_map <- function(linhas = 16, colunas = 30, minas = 99)
+{
+quadrados = linhas*colunas
+mapa_vetor = sample(c(rep(-1, minas), rep(0, quadrados-minas)), quadrados)
+mapa_matrix = matrix(mapa_vetor, nrow = linhas, byrow = TRUE)
+
+count_mines = function(i, j, matriz){
+  if(matriz[i,j] == 0){
+    count = 0
+    for(n in -1:1){
+      for(k in -1:1){
+        if(matriz[i+n, j+k] == -1){count = count + 1}
+      }
+    }
+    return(count)
+  }
+  else{return(-1)}
+}
+
+matriz_auxiliar = mapa_matrix
+matriz_auxiliar = cbind(rep(-2, nrow(matriz_auxiliar)), matriz_auxiliar, rep(-2, nrow(matriz_auxiliar)))
+matriz_auxiliar = rbind(rep(-2, ncol(matriz_auxiliar)), matriz_auxiliar, rep(-2, ncol(matriz_auxiliar)))
+
+for(i in 1:linhas){
+  for(j in 1:colunas){
+    mapa_matrix[i, j] = count_mines(i+1, j+1, matriz_auxiliar)
+  }
+}
+return(mapa_matrix)
+}
+
+create_interface <- function(linhas = 16, colunas = 30){
+  interface = rep(" ", linhas*colunas)
+  interface = matrix(interface, nrow = linhas)
+  return(interface)
+}
+```
+
+```{r}
+reveal_neighbours <- function(matriz_auxiliar, vetori, vetorj){
+  for(k in rep(1, length(vetori))){
+    i = vetori[1] |> as.numeric()
+    j = vetorj[1] |> as.numeric()
+    vetori = vetori[-1] 
+    vetorj = vetorj[-1]
+    
+    for(l in -1:1){
+      for(m in -1:1){
+        if(matriz_auxiliar[i+l,j+m] == 0 && matriz_auxiliar[i+l, j+m] != -2){
+          vetori = c(vetori, i+l)
+          vetorj = c(vetorj, j+m)
+        }
+        matriz_auxiliar[i+l, j+m] = "r"
+      }
+    }
+  }
+  lista = list(vetori, vetorj, matriz_auxiliar)
+  return(lista)
+}
+
+reveal_zeros <- function(i, j, interface, mapa){
+  vetori = c(i+1)
+  vetorj = c(j+1)
+  matriz_auxiliar = mapa
+  matriz_auxiliar = cbind(rep(-2, nrow(matriz_auxiliar)), matriz_auxiliar, rep(-2, nrow(matriz_auxiliar)))
+  matriz_auxiliar = rbind(rep(-2, ncol(matriz_auxiliar)), matriz_auxiliar, rep(-2, ncol(matriz_auxiliar)))
+  
+  while(length(vetori) != 0){
+    resultado = reveal_neighbours(matriz_auxiliar, vetori, vetorj)
+    matriz_auxiliar = unlist(resultado[[3]])
+    vetori = unlist(resultado[[1]])
+    vetorj = unlist(resultado[[2]])
+  }
+  
+  matriz_auxiliar = matriz_auxiliar[,-1]
+  matriz_auxiliar = matriz_auxiliar[,-ncol(matriz_auxiliar)]
+  matriz_auxiliar = matriz_auxiliar[-1,]
+  matriz_auxiliar = matriz_auxiliar[-nrow(matriz_auxiliar),]
+  
+  mapa_vetor = as.vector(mapa)
+  interface_vetor = as.vector(interface)
+  aux_vetor = as.vector(matriz_auxiliar)
+  
+  for(m in 1:length(aux_vetor)){
+    if(aux_vetor[m] == "r"){
+      interface_vetor[m] = mapa_vetor[m]
+    }
+  }
+  
+  interface = matrix(interface_vetor, nrow = nrow(interface))
+  
+  return(interface)
+}
+
+click_reveal <- function(i, j, interface, mapa){
+  if(mapa[i, j] == 0){
+    interface = reveal_zeros(i, j, interface, mapa)
+    return(interface)
+  }
+  else{
+    interface[i, j] = mapa[i, j]
+    return(interface)
+  }
+}
+```
+
+```{r}
+mapa = create_map()
+interface = create_interface()
+```
+
+```{r}
+interface = click_reveal(2,3, interface, mapa)
+```
+
+```{r}
+library(neuralnet)
+library(caret)
+
+lista_puzzles = list()
+lista_solucoes = list()
+
+vetor_puzz <- function(x){
+  for(n in 1:length(x)){
+    sorte = sample(0:1, 1)
+    if(sorte == 0){
+      x[n] = 99
+    }
+  }
+  return(x)
+}
+
+positive_to_zero <- function(matriz){
+  matriz[matriz >= 0] <- 0
+  return(matriz)
+}
+
+for(n in 1:10000){
+  n_minas = sample(3:8, 1)
+  mapa = create_map(linhas = 5, colunas = 5, minas = n_minas) |> as.vector()
+  lista_puzzles[[n]] = mapa |> vetor_puzz()
+  lista_solucoes[[n]] = mapa |> positive_to_zero()
+}
+
+puzzles = do.call(rbind, lista_puzzles)
+solucoes = do.call(rbind, lista_solucoes)
+```
+
+```{r}
+train_index = sample(1:nrow(solucoes), nrow(solucoes)*0.8)
+train_puzzles <- puzzles[train_index, ]
+train_solutions <- solucoes[train_index, ]
+test_puzzles <- puzzles[-train_index, ]
+test_solutions <- solucoes[-train_index, ]
+
+train_puzzles <- scale(train_puzzles)
+test_puzzles <- scale(test_puzzles)
+
+train_puzzles = cbind(train_puzzles, train_solutions)
+test_puzzles = cbind(test_puzzles, test_solutions)
+```
+
+```{r}
+nn <- neuralnet(V26 + V27 + V28 + V29 + V30 + V31 + V32 + V33 +
+                V34 + V35 + V36 + V37 + V38 + V39 + V40 + V41 +
+                V42 + V43 + V44 + V45 + V46 + V47 + V48 + V49 + V50 ~.,
+                data = train_puzzles[1:1000,], hidden = c(20), threshold = 0.05, linear.output = TRUE, lifesign = "full")
+```
+
+```{r}
+library(rpart)
+
+tree <- rpart(V26 + V27 + V28 + V29 + V30 + V31 + V32 + V33 +
+              V34 + V35 + V36 + V37 + V38 + V39 + V40 + V41 +
+              V42 + V43 + V44 + V45 + V46 + V47 + V48 + V49 + V50 ~.,
+              data = train_puzzles |> as.data.frame(), method = "class")
+```
+
+```{r}
+for(i in 26:50){
+  treex <- rpart(V26~., data = train_puzzles[,c(1:25, i)] |> as.data.frame(), method = "class")
+  assign(paste0("tree", i), treex)
+}
+```
+
+```{r}
+for(j in 26:50){
+  vartree <- get(paste0("tree", j))
+  predx <- predict(vartree, test_puzzles[,1:25] |> as.data.frame(), type = "class")
+  assign(paste0("pred", j), predx)
+}
+```
+
+```{r}
+dfpreds <- cbind(pred26, pred27, pred28, pred29, pred30, pred31, pred32, pred33, pred34, pred35, pred36, pred37, pred38, pred39, pred40, pred41, pred42, pred43, pred44, pred45, pred46, pred47, pred48, pred49, pred50) |> as.data.frame()
+
+names(dfpreds) <- paste0("V", 1:25)
+```
+
+```{r}
+table(unlist(dfpreds) |> as.vector(), unlist(test_solutions) |> as.vector())
+```
+
+
+```{r}
+predictions <- predict(tree, test_puzzles[1:2,1:25] |> as.data.frame(), type = "class")
+confusionMatrix(predictions, test_solutions[1,])
+```
+```{r}
+plot(tree)
+```
+
+
+```{r}
+predictions <- predict(nn, test_puzzles[,1:25] |> as.data.frame())
+confusionMatrix(predictions, test_solutions)
+```
+
